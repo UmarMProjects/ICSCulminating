@@ -17,6 +17,12 @@ public class AssetManager {
     private static Texture catLightAttackTexture;
     private static Texture playerHurtTexture;
     private static Texture playerDeathTexture;
+    
+    public static Texture backgroundLayer1;
+    public static Texture backgroundLayer2;
+    public static Texture backgroundLayer3;
+    public static Texture backgroundLayer4;
+    public static Texture backgroundLayer5;
 
     // Animations
     private static Animation<TextureRegion> catIdleAnimation;
@@ -44,6 +50,12 @@ public class AssetManager {
             catDodgeTexture = new Texture(Gdx.files.internal("sprites/player/Cat_Dodge.png"));
             catAirAttackTexture = new Texture(Gdx.files.internal("sprites/player/Cat_AirAttack.png"));
             catLightAttackTexture = new Texture(Gdx.files.internal("sprites/player/Cat_LightAttack.png"));
+            
+            backgroundLayer1 = new Texture(Gdx.files.internal("1.png"));
+            backgroundLayer2 = new Texture(Gdx.files.internal("2.png"));
+            backgroundLayer3 = new Texture(Gdx.files.internal("3.png"));
+            backgroundLayer4 = new Texture(Gdx.files.internal("4.png"));
+            backgroundLayer5 = new Texture(Gdx.files.internal("5.png"));
             
             Texture enemyIdleTexture = new Texture(Gdx.files.internal("sprites/enemy/Enemy3-Idle.png"));
             Texture enemyDeathTexture = new Texture(Gdx.files.internal("sprites/enemy/Enemy3_Die.png"));
@@ -137,5 +149,11 @@ public class AssetManager {
         catDodgeTexture.dispose();
         catAirAttackTexture.dispose();
         catLightAttackTexture.dispose();
+        
+        backgroundLayer1.dispose();
+        backgroundLayer2.dispose();
+        backgroundLayer3.dispose();
+        backgroundLayer4.dispose();
+        backgroundLayer5.dispose();
     }
 }
