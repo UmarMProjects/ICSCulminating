@@ -1,21 +1,17 @@
 package entities;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import utils.AssetManager;
-
-
-
-import com.badlogic.gdx.Input;
-
 import utils.GameConstants;
+
 public class Player implements ContactListener {
-    private static final float PLAYER_SIZE = 0.5f;
+    private static final float PLAYER_SIZE = 0.25f;
     private final Body body;
     private Animation<TextureRegion> idleAnimation;
     private Animation<TextureRegion> runAnimation;
@@ -34,36 +30,30 @@ public class Player implements ContactListener {
     private static final float ATTACK_DURATION = 0.6f;
     private static final float ATTACK_RANGE = 1f;
     private static final int ATTACK_DAMAGE = 25;
-    
+
     private static final float MAX_HEALTH = 100f;
     private static final float HURT_ANIMATION_DURATION = 0.5f;
     private static final float INVINCIBILITY_DURATION = 1f; // Time of invincibility after getting hurt
-    
-    // Add health-related fields
 
     private boolean isHurt;
     private float hurtTimer;
     private boolean isInvincible;
     private float invincibilityTimer;
     private boolean isDead;
-    
 
     private static final float LIGHT_ATTACK_RANGE = 0.8f;
     private static final int LIGHT_ATTACK_DAMAGE = 15;
-  
-    
+
     private boolean isLightAttacking;
     private float lightAttackTimer;
     private static final float LIGHT_ATTACK_DURATION = 0.3f;
     private int lightAttackCombo; // 0 = no attack, 1 = first attack, 2 = second attack
     private static final float COMBO_WINDOW = 0.5f;
     private float comboTimer;
-    
-   
+
     private boolean canSecondAttack;
- 
-    private int currentAttackPhase; // 0 = none, 1 = first attack, 2 = second attack
-    
+    private int currentAttackPhase;
+
     private State currentState;
     private float stateTime;
     private boolean facingRight;
@@ -72,19 +62,16 @@ public class Player implements ContactListener {
     private static final float ATTACK_SCALE = 0.02f;
     private static final float REGULAR_SCALE_X = 0.01f;
     private static final float REGULAR_SCALE_Y = 0.015f;
-    
+
     private static final float IDLE_OFFSET = 0.01f;
     private static final float RUN_OFFSET = 0.075f;
     private static final float ATTACK_OFFSET = 0.02f;
     private static final float JUMP_OFFSET = 0.02f;
     private World world;
-    
 
     private boolean canJump;
     private boolean isInAir;
-    private TextureRegion currentFrame;
 
-    // Dodge related fields
     private static final float DODGE_DURATION = 0.6f;
     private static final float DODGE_COOLDOWN = 1.2f;
     private static final float DODGE_SPEED = 3f;
@@ -92,70 +79,69 @@ public class Player implements ContactListener {
     private float dodgeTimer;
     private float dodgeCooldownTimer;
     private boolean canDodge;
-    
+
     private float maxHealth = 100;
     private float currentHealth = 100;
-   
-     
+
+    private HealthBar healthBar;
+
     public enum State {
-        IDLE, RUNNING, JUMPING, FALLING, ATTACKING, DODGING, AIR_ATTACKING, 
-        LIGHT_ATTACKING // Simplified to one light attack state
-, DYING, HURT
+        IDLE, RUNNING, JUMPING, FALLING, ATTACKING, DODGING, AIR_ATTACKING, LIGHT_ATTACKING, DYING, HURT
     }
 
-
-    public Player(World world, float startX, float startY) {
-    	 world.setContactListener(this);
+    public Player(World world, float startX, float startY, HealthBar healthBar) {
+        this.healthBar = healthBar;
+        this.currentHealth = 100; // Initialize health to 100
         this.world = world;
+
+        // Create the body and fixture
+        BodyDef bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.DynamicBody;
+        bodyDef.position.set(startX, startY);
+        bodyDef.fixedRotation = true;
+        body = world.createBody(bodyDef);
+
+        PolygonShape shape = new PolygonShape();
+        shape.setAsBox(PLAYER_SIZE, PLAYER_SIZE);
+
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = shape;
+        fixtureDef.density = 1f;
+        fixtureDef.friction = 0.5f;
+        body.createFixture(fixtureDef).setUserData("player");
+        shape.dispose();
+
+        world.setContactListener(this);
+
         currentHealth = MAX_HEALTH;
         isHurt = false;
         hurtTimer = 0;
         isInvincible = false;
         invincibilityTimer = 0;
         isDead = false;
-        BodyDef bodyDef = new BodyDef();
-        bodyDef.type = BodyDef.BodyType.DynamicBody;
-        bodyDef.position.set(startX, startY);
-        bodyDef.fixedRotation = true;
-        
-        body = world.createBody(bodyDef);
-        
-        PolygonShape shape = new PolygonShape();
-        shape.setAsBox(PLAYER_SIZE/2, PLAYER_SIZE/2);
-        
-        FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = shape;
-        fixtureDef.density = 1f;
-        fixtureDef.friction = 0.4f;
-        fixtureDef.restitution = 0;
-        
-        body.createFixture(fixtureDef).setUserData("player");
-        shape.dispose();
-        
+
         currentState = State.IDLE;
         stateTime = 0;
         facingRight = true;
         canJump = false;
-        
+
         isLightAttacking = false;
         lightAttackTimer = 0;
         canSecondAttack = false;
         comboTimer = 0;
         currentAttackPhase = 0;
-        
+
         facingRight = true;
-        
+
         isAttacking = false;
         attackTimer = 0;
-        
+
         isDodging = false;
         dodgeTimer = 0;
         dodgeCooldownTimer = 0;
         canDodge = true;
-        
+
         loadAnimations();
-        
-        world.setContactListener(this);
     }
 
     private void loadAnimations() {
@@ -168,16 +154,15 @@ public class Player implements ContactListener {
         airAttackAnimation = AssetManager.getPlayerAirAttackAnimation();
         lightAttackFirstAnimation = AssetManager.getPlayerLightAttackFirstAnimation();
         lightAttackSecondAnimation = AssetManager.getPlayerLightAttackSecondAnimation();
-        hurtAnimation = AssetManager.getPlayerHurtAnimation(); // Add this line
-        deathAnimation = AssetManager.getPlayerDeathAnimation(); // Add this line
-       
-        
+        hurtAnimation = AssetManager.getPlayerHurtAnimation();
+        deathAnimation = AssetManager.getPlayerDeathAnimation();
+
         if (dodgeAnimation == null) {
             System.out.println("Warning: Dodge animation is null!");
         }
     }
-   
-      private void die() {
+
+    private void die() {
         isDead = true;
         currentState = State.DYING;
         // Disable physics interactions
@@ -191,10 +176,10 @@ public class Player implements ContactListener {
             canDodge = false;
             dodgeTimer = 0;
             currentState = State.DODGING;
-            
+
             // Apply stronger dodge force
             float dodgeVelocityX = facingRight ? DODGE_SPEED : -DODGE_SPEED;
-            body.setLinearVelocity(dodgeVelocityX, body.getLinearVelocity().y * 0.5f); // Reduce vertical velocity during dodge
+            body.setLinearVelocity(dodgeVelocityX, body.getLinearVelocity().y * 0.5f); // Reduce vertical velocity
         }
     }
 
@@ -202,13 +187,12 @@ public class Player implements ContactListener {
         if (isDodging) return;
 
         Vector2 vel = body.getLinearVelocity();
-        
+
         // Handle light attack (R key)
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             if (!isLightAttacking && !isAttacking) {
                 performLightAttack();
             } else if (isLightAttacking && lightAttackCombo == 1 && comboTimer < COMBO_WINDOW) {
-                // Second hit of combo
                 performLightAttack();
             }
         }
@@ -217,7 +201,7 @@ public class Player implements ContactListener {
         if (Gdx.input.isKeyJustPressed(Input.Keys.E) && !isLightAttacking) {
             startAttack();
         }
-        
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
             takeDamage(10); // Take 10 damage when H key is pressed
         }
@@ -246,74 +230,54 @@ public class Player implements ContactListener {
             isInAir = true;
         }
     }
-    
+
     private void performLightAttack() {
-        // Check if player is in the air
         if (isInAir) {
-            // Perform air attack instead of light attack
             performAirAttack();
             return;
         }
 
         isLightAttacking = true;
         lightAttackTimer = 0;
-        
+
         if (lightAttackCombo == 0) {
             lightAttackCombo = 1;
             comboTimer = 0;
         } else if (lightAttackCombo == 1) {
             lightAttackCombo = 2;
         }
-        
+
         currentState = State.LIGHT_ATTACKING;
-        
-        float attackX = facingRight ? body.getPosition().x + LIGHT_ATTACK_RANGE 
-                                   : body.getPosition().x - LIGHT_ATTACK_RANGE;
-        
-        world.QueryAABB(
-            fixture -> {
-                if (fixture.getUserData() != null && fixture.getUserData().equals("enemy")) {
-                    Body enemyBody = fixture.getBody();
-                    if (enemyBody.getUserData() instanceof Enemy) {
-                        Enemy enemy = (Enemy) enemyBody.getUserData();
-                        
-                    }
-                }
-                return true;
-            },
-            attackX - LIGHT_ATTACK_RANGE/2,
-            body.getPosition().y - PLAYER_SIZE/2,
-            attackX + LIGHT_ATTACK_RANGE/2,
-            body.getPosition().y + PLAYER_SIZE/2
-        );
+
+        float attackX = facingRight ? body.getPosition().x + LIGHT_ATTACK_RANGE
+                : body.getPosition().x - LIGHT_ATTACK_RANGE;
+
+        world.QueryAABB(fixture -> {
+            if (fixture.getUserData() != null && fixture.getUserData().equals("enemy")) {
+                Body enemyBody = fixture.getBody();
+                // Handle enemy collision
+            }
+            return true;
+        }, attackX - LIGHT_ATTACK_RANGE / 2, body.getPosition().y - PLAYER_SIZE / 2, attackX + LIGHT_ATTACK_RANGE / 2,
+                body.getPosition().y + PLAYER_SIZE / 2);
     }
-    
+
     private void performAirAttack() {
         if (!isAttacking) {
             isAttacking = true;
             attackTimer = 0;
             currentState = State.AIR_ATTACKING;
-            
+
             float attackX = facingRight ? body.getPosition().x + ATTACK_RANGE : body.getPosition().x - ATTACK_RANGE;
-            
-            world.QueryAABB(
-                fixture -> {
-                    if (fixture.getUserData() != null && fixture.getUserData().equals("enemy")) {
-                        Body enemyBody = fixture.getBody();
-                        Object userData = enemyBody.getUserData();
-                        if (userData instanceof Enemy) {
-                            Enemy enemy = (Enemy) userData;
-                           
-                        }
-                        return true;
-                    }
-                    return true;
-                },
-                attackX - ATTACK_RANGE/2,
-                body.getPosition().y - PLAYER_SIZE/2,
-                attackX + ATTACK_RANGE/2,
-                body.getPosition().y + PLAYER_SIZE/2
-            );
+
+            world.QueryAABB(fixture -> {
+                if (fixture.getUserData() != null && fixture.getUserData().equals("enemy")) {
+                    Body enemyBody = fixture.getBody();
+                    // Handle enemy collision
+                }
+                return true;
+            }, attackX - ATTACK_RANGE / 2, body.getPosition().y - PLAYER_SIZE / 2, attackX + ATTACK_RANGE / 2,
+                    body.getPosition().y + PLAYER_SIZE / 2);
         }
     }
 
@@ -322,41 +286,28 @@ public class Player implements ContactListener {
             System.out.println("Starting attack!");
             isAttacking = true;
             attackTimer = 0;
-            
-            // Set appropriate attack state based on whether player is in air
+
             currentState = isInAir ? State.AIR_ATTACKING : State.ATTACKING;
-            
+
             float attackX = facingRight ? body.getPosition().x + ATTACK_RANGE : body.getPosition().x - ATTACK_RANGE;
-            
-            world.QueryAABB(
-                fixture -> {
-                    if (fixture.getUserData() != null && fixture.getUserData().equals("enemy")) {
-                        Body enemyBody = fixture.getBody();
-                        Object userData = enemyBody.getUserData();
-                        if (userData instanceof Enemy) {
-                            Enemy enemy = (Enemy) userData;
-                      
-                        }
-                        return true;
-                    }
-                    return true;
-                },
-                attackX - ATTACK_RANGE/2,
-                body.getPosition().y - PLAYER_SIZE/2,
-                attackX + ATTACK_RANGE/2,
-                body.getPosition().y + PLAYER_SIZE/2
-            );
+
+            world.QueryAABB(fixture -> {
+                if (fixture.getUserData() != null && fixture.getUserData().equals("enemy")) {
+                    Body enemyBody = fixture.getBody();
+                    // Handle enemy collision
+                }
+                return true;
+            }, attackX - ATTACK_RANGE / 2, body.getPosition().y - PLAYER_SIZE / 2, attackX + ATTACK_RANGE / 2,
+                    body.getPosition().y + PLAYER_SIZE / 2);
         }
     }
- 
-   
+
     public void update() {
         float deltaTime = Gdx.graphics.getDeltaTime();
-        Vector2 vel = body.getLinearVelocity(); // Moved here for access in all state updates
-        
+        Vector2 vel = body.getLinearVelocity();
+
         handleInput();
-        
-        
+
         if (isDead) {
             stateTime += deltaTime;
             return;
@@ -366,9 +317,8 @@ public class Player implements ContactListener {
             hurtTimer += deltaTime;
             if (hurtTimer >= HURT_ANIMATION_DURATION) {
                 isHurt = false;
-                // Transition out of hurt state
                 if (currentHealth > 0) {
-                    currentState = State.IDLE; // or appropriate state
+                    currentState = State.IDLE;
                 }
             }
         }
@@ -379,22 +329,18 @@ public class Player implements ContactListener {
                 isInvincible = false;
             }
         }
-        
-        // Update light attack state
+
         if (isLightAttacking) {
             lightAttackTimer += deltaTime;
             if (lightAttackTimer >= LIGHT_ATTACK_DURATION) {
                 isLightAttacking = false;
-                
+
                 if (lightAttackCombo == 1) {
-                    // Start combo window
                     comboTimer = 0;
                 } else if (lightAttackCombo == 2) {
-                    // Reset combo
                     lightAttackCombo = 0;
                 }
-                
-                // Return to appropriate state
+
                 if (isInAir) {
                     currentState = vel.y < 0 ? State.FALLING : State.JUMPING;
                 } else {
@@ -402,18 +348,14 @@ public class Player implements ContactListener {
                 }
             }
         }
-        
-        // Update combo window
+
         if (lightAttackCombo == 1 && !isLightAttacking) {
             comboTimer += deltaTime;
             if (comboTimer >= COMBO_WINDOW) {
-                lightAttackCombo = 0;  // Reset combo if window expires
+                lightAttackCombo = 0;
             }
         }
-        
 
-
-        // Update dodge state
         if (isDodging) {
             dodgeTimer += deltaTime;
             if (dodgeTimer >= DODGE_DURATION) {
@@ -429,7 +371,6 @@ public class Player implements ContactListener {
             }
         }
 
-        // Update dodge cooldown
         if (!canDodge) {
             dodgeCooldownTimer += deltaTime;
             if (dodgeCooldownTimer >= DODGE_COOLDOWN) {
@@ -438,7 +379,6 @@ public class Player implements ContactListener {
             }
         }
 
-        // Update normal attack state
         if (isAttacking) {
             attackTimer += deltaTime;
             if (attackTimer >= ATTACK_DURATION) {
@@ -447,7 +387,6 @@ public class Player implements ContactListener {
             }
         }
 
-        // Update movement state if not in a special state
         if (!isLightAttacking && !isAttacking && !isDodging) {
             if (Math.abs(vel.y) > 0.1f) {
                 currentState = vel.y < 0 ? State.FALLING : State.JUMPING;
@@ -462,45 +401,41 @@ public class Player implements ContactListener {
             }
         }
     }
-    
-    
+
     public void takeDamage(float damage) {
         if (!isInvincible && !isDead) {
             currentHealth -= damage;
             if (currentHealth < 0) currentHealth = 0;
-            isHurt = true;
-            hurtTimer = 0;
-            isInvincible = true;
-            invincibilityTimer = 0;
+
+            healthBar.setHealth(currentHealth);
 
             if (currentHealth == 0) {
                 die();
             } else {
-                // Play hurt animation
                 currentState = State.HURT;
+                isHurt = true;
+                hurtTimer = 0;
+                isInvincible = true;
+                invincibilityTimer = 0;
             }
         }
     }
 
-
-       
-    
     public void render(SpriteBatch batch) {
         stateTime += Gdx.graphics.getDeltaTime();
-        
+
         TextureRegion frame = null;
         float currentScaleX = REGULAR_SCALE_X;
         float currentScaleY = REGULAR_SCALE_Y;
         float currentOffset = IDLE_OFFSET;
-        
-        
+
         switch (currentState) {
-        case DYING:
-            frame = deathAnimation.getKeyFrame(stateTime, false);
-            break;
-        case HURT:
-            frame = hurtAnimation.getKeyFrame(stateTime, false);
-            break;
+            case DYING:
+                frame = deathAnimation.getKeyFrame(stateTime, false);
+                break;
+            case HURT:
+                frame = hurtAnimation.getKeyFrame(stateTime, false);
+                break;
             case LIGHT_ATTACKING:
                 if (lightAttackCombo == 1 && lightAttackFirstAnimation != null) {
                     frame = lightAttackFirstAnimation.getKeyFrame(lightAttackTimer, false);
@@ -511,14 +446,14 @@ public class Player implements ContactListener {
                 currentScaleY = ATTACK_SCALE;
                 currentOffset = ATTACK_OFFSET;
                 break;
-        case AIR_ATTACKING:
-            if (airAttackAnimation != null) {
-                frame = airAttackAnimation.getKeyFrame(attackTimer, false);
-                currentScaleX = ATTACK_SCALE;
-                currentScaleY = ATTACK_SCALE;
-                currentOffset = ATTACK_OFFSET;
-            }
-            break;
+            case AIR_ATTACKING:
+                if (airAttackAnimation != null) {
+                    frame = airAttackAnimation.getKeyFrame(attackTimer, false);
+                    currentScaleX = ATTACK_SCALE;
+                    currentScaleY = ATTACK_SCALE;
+                    currentOffset = ATTACK_OFFSET;
+                }
+                break;
             case DODGING:
                 if (dodgeAnimation != null) {
                     frame = dodgeAnimation.getKeyFrame(dodgeTimer, false);
@@ -571,69 +506,66 @@ public class Player implements ContactListener {
         }
     }
 
-    private void drawFrame(SpriteBatch batch, TextureRegion frame, float scaleX, float scaleY, float offset) {
-        TextureRegion currentFrame = new TextureRegion(frame);
-        
-        if (!facingRight && !currentFrame.isFlipX()) {
-            currentFrame.flip(true, false);
-        } else if (facingRight && currentFrame.isFlipX()) {
-            currentFrame.flip(true, false);
-        }
-        
-        Vector2 position = body.getPosition();
-        float scaledWidth = SPRITE_WIDTH * scaleX;
-        float scaledHeight = SPRITE_HEIGHT * scaleY;
-        
-        batch.draw(
-            currentFrame,
-            position.x - scaledWidth/2,
-            position.y - scaledHeight/2 - offset,
-            scaledWidth,
-            scaledHeight
-        );
-    }
-    
-   
-
-    @Override
-    public void beginContact(Contact contact) {
-        Fixture fixtureA = contact.getFixtureA();
-        Fixture fixtureB = contact.getFixtureB();
-        
-        if (fixtureA.getUserData() != null && fixtureA.getUserData().equals("player") ||
-            fixtureB.getUserData() != null && fixtureB.getUserData().equals("player")) {
-            canJump = true;
-            isInAir = false;
-        }
-    }
-
-    @Override
-    public void endContact(Contact contact) {
-        Fixture fixtureA = contact.getFixtureA();
-        Fixture fixtureB = contact.getFixtureB();
-        
-        if (fixtureA.getUserData() != null && fixtureA.getUserData().equals("player") ||
-            fixtureB.getUserData() != null && fixtureB.getUserData().equals("player")) {
-            isInAir = true; // Player has left the ground
-        }
-    }
-  //  public boolean isImmune() {
-     //   return isDodging && dodgeTimer <= DODGE_IMMUNITY_DURATION;
-  //  }
 
 
-    @Override
-    public void preSolve(Contact contact, Manifold oldManifold) {}
+	private void drawFrame(SpriteBatch batch, TextureRegion frame, float scaleX, float scaleY, float offset) {
+		TextureRegion currentFrame = new TextureRegion(frame);
 
-    @Override
-    public void postSolve(Contact contact, ContactImpulse impulse) {}
+		if (!facingRight && !currentFrame.isFlipX()) {
+			currentFrame.flip(true, false);
+		} else if (facingRight && currentFrame.isFlipX()) {
+			currentFrame.flip(true, false);
+		}
 
-    public void dispose() {
-        // Cleanup resources if needed
-    }
+		Vector2 position = body.getPosition();
+		float scaledWidth = SPRITE_WIDTH * scaleX;
+		float scaledHeight = SPRITE_HEIGHT * scaleY;
+
+		batch.draw(currentFrame, position.x - scaledWidth / 2, position.y - scaledHeight / 2 - offset, scaledWidth,
+				scaledHeight);
+	}
+
+	@Override
+	public void beginContact(Contact contact) {
+		Fixture fixtureA = contact.getFixtureA();
+		Fixture fixtureB = contact.getFixtureB();
+
+		if (fixtureA.getUserData() != null && fixtureA.getUserData().equals("player")
+				|| fixtureB.getUserData() != null && fixtureB.getUserData().equals("player")) {
+			canJump = true;
+			isInAir = false;
+		}
+	}
+
+	@Override
+	public void endContact(Contact contact) {
+		Fixture fixtureA = contact.getFixtureA();
+		Fixture fixtureB = contact.getFixtureB();
+
+		if (fixtureA.getUserData() != null && fixtureA.getUserData().equals("player")
+				|| fixtureB.getUserData() != null && fixtureB.getUserData().equals("player")) {
+			isInAir = true; // Player has left the ground
+		}
+	}
+
+	@Override
+	public void preSolve(Contact contact, Manifold oldManifold) {
+	}
+
+	@Override
+	public void postSolve(Contact contact, ContactImpulse impulse) {
+	}
+
+	public void dispose() {
+		// Cleanup resources if needed
+	}
 
 	public float getMaxHealth() {
 		return maxHealth;
+	}
+
+	public float getHealth() {
+		return currentHealth;
 	}
 
 	public float getCurrentHealth() {

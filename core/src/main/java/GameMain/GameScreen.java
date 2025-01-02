@@ -41,6 +41,7 @@ public class GameScreen implements Screen {
     private Enemy enemy;
     private final HealthBar healthBar; // Initialize this properly
     private final AnimatedBackground animatedBackground;
+    
 
     public GameScreen() {
         // Load assets
@@ -54,7 +55,7 @@ public class GameScreen implements Screen {
         
         batch = new SpriteBatch();
         debugRenderer = new Box2DDebugRenderer();
-        shapeRenderer = new ShapeRenderer(); // Initialize shapeRenderer
+        shapeRenderer = new ShapeRenderer(); 
         
         platforms = new ArrayList<>();
         enemies = new ArrayList<>();
@@ -63,11 +64,12 @@ public class GameScreen implements Screen {
         
         enemies.add(new Enemy(world, 5, 1));
         enemies.add(new Enemy(world, 7, 3));
-        
-        player = new Player(world, viewport.getWorldWidth() / 2, 3);
-        
+
         // Initialize the health bar
-        healthBar = new HealthBar(0.2, 4.3, 1, 0.4, 100); // Example initialization
+        healthBar = new HealthBar(0.4, 4.3, 1, 0.4, 100); 
+
+        // Pass the health bar to the player
+        player = new Player(world, viewport.getWorldWidth() / 2, 3, healthBar);
         
         // Initialize the animated background with textures, speeds, and desired size
         Texture[] layers = {
@@ -77,9 +79,9 @@ public class GameScreen implements Screen {
             AssetManager.backgroundLayer4,
             AssetManager.backgroundLayer5
         };
-        float[] speeds = {1, 1, 1, 1, 1}; // Adjust speeds as needed
-        float scaleWidth = 8;  // Your desired width
-        float scaleHeight = 5; // Your desired height
+        float[] speeds = {1, 1, 1, 1, 1}; 
+        float scaleWidth = 8;  
+        float scaleHeight = 5; 
         animatedBackground = new AnimatedBackground(layers, speeds, scaleWidth, scaleHeight);
         
         camera.update();
@@ -166,9 +168,8 @@ public class GameScreen implements Screen {
         world.dispose();
         batch.dispose();
         debugRenderer.dispose();
-        shapeRenderer.dispose(); // Dispose shapeRenderer
-        player.dispose();
-        enemy.dispose();
+        shapeRenderer.dispose();
+        player.dispose(); // Dispose player resources
         for (Enemy e : enemies) {
             e.dispose();
         }
