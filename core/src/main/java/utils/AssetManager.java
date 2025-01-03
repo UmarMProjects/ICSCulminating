@@ -18,6 +18,12 @@ public class AssetManager {
     private static Texture playerHurtTexture;
     private static Texture playerDeathTexture;
     
+    private static Texture enemyIdleTexture;
+    private static Texture enemyAttackTexture;
+    private static Texture enemyHurtTexture;
+    private static Texture enemyDeathTexture;
+    private static Texture enemyWalkTexture;
+    
     public static Texture backgroundLayer1;
     public static Texture backgroundLayer2;
     public static Texture backgroundLayer3;
@@ -34,10 +40,15 @@ public class AssetManager {
     private static Animation<TextureRegion> catLightAttackFirstAnimation;
     private static Animation<TextureRegion> catLightAttackSecondAnimation;
     private static Animation<TextureRegion> catDodgeAnimation;
-    private static Animation<TextureRegion> enemyIdleAnimation;
-    private static Animation<TextureRegion> enemyDeathAnimation;
+   
     private static Animation<TextureRegion> playerHurtAnimation;
     private static Animation<TextureRegion> playerDeathAnimation;
+    
+    private static Animation<TextureRegion> enemyIdleAnimation;
+    private static Animation<TextureRegion> enemyAttackAnimation;
+    private static Animation<TextureRegion> enemyHurtAnimation;
+    private static Animation<TextureRegion> enemyDeathAnimation;
+    private static Animation<TextureRegion> enemyWalkAnimation;
 
     public static void loadAssets() {
         try {
@@ -50,6 +61,8 @@ public class AssetManager {
             catDodgeTexture = new Texture(Gdx.files.internal("sprites/player/Cat_Dodge.png"));
             catAirAttackTexture = new Texture(Gdx.files.internal("sprites/player/Cat_AirAttack.png"));
             catLightAttackTexture = new Texture(Gdx.files.internal("sprites/player/Cat_LightAttack.png"));
+            playerHurtTexture = new Texture(Gdx.files.internal("sprites/player/Cat_Hurt.png"));
+            playerDeathTexture = new Texture(Gdx.files.internal("sprites/player/Cat_Death.png"));
             
             backgroundLayer1 = new Texture(Gdx.files.internal("1.png"));
             backgroundLayer2 = new Texture(Gdx.files.internal("2.png"));
@@ -57,11 +70,14 @@ public class AssetManager {
             backgroundLayer4 = new Texture(Gdx.files.internal("4.png"));
             backgroundLayer5 = new Texture(Gdx.files.internal("5.png"));
             
-            Texture enemyIdleTexture = new Texture(Gdx.files.internal("sprites/enemy/Enemy3-Idle.png"));
-            Texture enemyDeathTexture = new Texture(Gdx.files.internal("sprites/enemy/Enemy3_Die.png"));
+            enemyIdleTexture = new Texture(Gdx.files.internal("sprites/enemy/Pink_Monster_Idle.png"));
+            enemyAttackTexture = new Texture(Gdx.files.internal("sprites/enemy/Pink_Monster_Attack.png"));
+            enemyHurtTexture = new Texture(Gdx.files.internal("sprites/enemy/Pink_Monster_Hurt.png"));
+            enemyDeathTexture = new Texture(Gdx.files.internal("sprites/enemy/Pink_Monster_Death.png"));
+            enemyWalkTexture = new Texture(Gdx.files.internal("sprites/enemy/Pink_Monster_Run.png"));
             
-            playerHurtTexture = new Texture(Gdx.files.internal("sprites/player/Cat_Hurt.png"));
-            playerDeathTexture = new Texture(Gdx.files.internal("sprites/player/Cat_Death.png"));
+            
+            
 
             // Create animations
             TextureRegion[][] tmp = TextureRegion.split(
@@ -88,8 +104,12 @@ public class AssetManager {
             catDodgeAnimation = createAnimation(catDodgeTexture, 8, 1, 0.075f);
             catAirAttackAnimation = createAnimation(catAirAttackTexture, 6, 1, 0.13f);
             
-            enemyIdleAnimation = createAnimation(enemyIdleTexture, 8, 1, 0.1f);
-            enemyDeathAnimation = createAnimation(enemyDeathTexture, 16, 1, 0.1f);
+            enemyIdleAnimation = createAnimation(enemyIdleTexture, 4, 1, 0.1f);
+            enemyAttackAnimation = createAnimation(enemyAttackTexture, 4, 1, 0.1f);
+            enemyHurtAnimation = createAnimation(enemyHurtTexture, 4, 1, 0.1f);
+            enemyDeathAnimation = createAnimation(enemyDeathTexture, 9, 1, 0.1f);
+            enemyWalkAnimation = createAnimation(enemyWalkTexture, 6, 1, 0.1f);
+
             
             
             playerHurtAnimation = createAnimation(playerHurtTexture, 4, 1, 0.1f);
@@ -129,8 +149,12 @@ public class AssetManager {
     public static Animation<TextureRegion> getPlayerAirAttackAnimation() { return catAirAttackAnimation; }
     public static Animation<TextureRegion> getPlayerLightAttackFirstAnimation() { return catLightAttackFirstAnimation; }
     public static Animation<TextureRegion> getPlayerLightAttackSecondAnimation() { return catLightAttackSecondAnimation; }
+
     public static Animation<TextureRegion> getEnemyIdleAnimation() { return enemyIdleAnimation; }
+    public static Animation<TextureRegion> getEnemyAttackAnimation() { return enemyAttackAnimation; }
+    public static Animation<TextureRegion> getEnemyHurtAnimation() { return enemyHurtAnimation; }
     public static Animation<TextureRegion> getEnemyDeathAnimation() { return enemyDeathAnimation; }
+    public static Animation<TextureRegion> getEnemyWalkAnimation() { return enemyWalkAnimation; }
     
     public static Animation<TextureRegion> getPlayerHurtAnimation() {
         return playerHurtAnimation;
@@ -155,5 +179,11 @@ public class AssetManager {
         backgroundLayer3.dispose();
         backgroundLayer4.dispose();
         backgroundLayer5.dispose();
+        
+        enemyIdleTexture.dispose();
+        enemyAttackTexture.dispose();
+        enemyHurtTexture.dispose();
+        enemyDeathTexture.dispose();
+        enemyWalkTexture.dispose();
     }
 }

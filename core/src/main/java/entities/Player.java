@@ -27,7 +27,7 @@ public class Player implements ContactListener {
 
     private boolean isAttacking;
     private float attackTimer;
-    private static final float ATTACK_DURATION = 0.6f;
+    private static final float ATTACK_DURATION = 0.25f;
     private static final float ATTACK_RANGE = 1f;
     private static final int ATTACK_DAMAGE = 25;
 
@@ -524,6 +524,10 @@ public class Player implements ContactListener {
 		batch.draw(currentFrame, position.x - scaledWidth / 2, position.y - scaledHeight / 2 - offset, scaledWidth,
 				scaledHeight);
 	}
+	
+	 public Body getBody() {
+	        return body;
+	    }
 
 	@Override
 	public void beginContact(Contact contact) {

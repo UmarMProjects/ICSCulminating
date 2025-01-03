@@ -26,73 +26,73 @@ import entities.Platform;
 import java.util.ArrayList;
 import utils.AssetManager; 
 
+import utils.GridGraph;
+
 
 
 public class GameScreen implements Screen {
     private final World world;
-    private final Player player;
+    private Player player;
     private final OrthographicCamera camera;
     private final Viewport viewport;
     private final SpriteBatch batch;
     private final Box2DDebugRenderer debugRenderer;
     private final ShapeRenderer shapeRenderer;
     private final ArrayList<Platform> platforms;
-    private ArrayList<Enemy> enemies;
-    private Enemy enemy;
-    private final HealthBar healthBar; // Initialize this properly
+    private final ArrayList<Enemy> enemies;
+    private final HealthBar healthBar;
     private final AnimatedBackground animatedBackground;
-    
+    private GridGraph gridGraph;
 
     public GameScreen() {
         // Load assets
         AssetManager.loadAssets();
 
         world = new World(new Vector2(0, -1f), true);
-        
+
         camera = new OrthographicCamera();
         viewport = new FitViewport(GameConstants.VIEWPORT_WIDTH, GameConstants.VIEWPORT_HEIGHT, camera);
         camera.position.set(viewport.getWorldWidth() / 2, viewport.getWorldHeight() / 2, 0);
-        
+
         batch = new SpriteBatch();
         debugRenderer = new Box2DDebugRenderer();
-        shapeRenderer = new ShapeRenderer(); 
-        
+        shapeRenderer = new ShapeRenderer();
+
         platforms = new ArrayList<>();
         enemies = new ArrayList<>();
-        
+
         createPlatforms();
-        
-        enemies.add(new Enemy(world, 5, 1));
-        enemies.add(new Enemy(world, 7, 3));
 
         // Initialize the health bar
-        healthBar = new HealthBar(0.4, 4.3, 1, 0.4, 100); 
+        healthBar = new HealthBar(0.4f, 4.3f, 1f, 0.4f, 100);
 
         // Pass the health bar to the player
         player = new Player(world, viewport.getWorldWidth() / 2, 3, healthBar);
-        
+
+        // Initialize the grid graph for pathfinding and mark platform nodes as walkable
+        gridGraph = new GridGraph(10, 10, platforms); // Adjust size as needed
+
+        // Add enemies to the game
+        enemies.add(new Enemy(world, 5, 1, player, gridGraph));
+        enemies.add(new Enemy(world, 7, 3, player, gridGraph));
+
         // Initialize the animated background with textures, speeds, and desired size
-        Texture[] layers = {
-            AssetManager.backgroundLayer1,
-            AssetManager.backgroundLayer2,
-            AssetManager.backgroundLayer3,
-            AssetManager.backgroundLayer4,
-            AssetManager.backgroundLayer5
-        };
-        float[] speeds = {1, 1, 1, 1, 1}; 
-        float scaleWidth = 8;  
-        float scaleHeight = 5; 
+        Texture[] layers = { AssetManager.backgroundLayer1, AssetManager.backgroundLayer2, AssetManager.backgroundLayer3,
+                AssetManager.backgroundLayer4, AssetManager.backgroundLayer5 };
+        float[] speeds = { 1, 1, 1, 1, 1 };
+        float scaleWidth = 8;
+        float scaleHeight = 5;
         animatedBackground = new AnimatedBackground(layers, speeds, scaleWidth, scaleHeight);
-        
+
         camera.update();
     }
-    
+
     @Override
     public void render(float delta) {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        world.step(1/60f, 6, 2);
+        world.step(1 / 60f, 6, 2);
 
         player.update();
         for (Enemy e : enemies) {
@@ -105,6 +105,10 @@ public class GameScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         animatedBackground.render(batch);
+        for (Enemy e : enemies) {
+            e.render(batch);
+        }
+        player.render(batch);
         batch.end();
 
         shapeRenderer.setProjectionMatrix(camera.combined);
@@ -113,13 +117,6 @@ public class GameScreen implements Screen {
             platform.render(shapeRenderer);
         }
         shapeRenderer.end();
-
-        batch.begin();
-        for (Enemy e : enemies) {
-            e.render(batch, camera);
-        }
-        player.render(batch);
-        batch.end();
 
         // Render the health bar last to ensure it is on top
         healthBar.render(shapeRenderer, camera);
@@ -134,6 +131,11 @@ public class GameScreen implements Screen {
         platforms.add(createPlatform(2, 2, 2, 0.3f));
         platforms.add(createPlatform(6, 2, 2, 0.3f));
         platforms.add(createPlatform(4, 3, 2, 0.3f));
+
+        // Debugging: Print platform positions
+        for (Platform platform : platforms) {
+            System.out.println("Platform at: " + platform.getBody().getPosition());
+        }
     }
 
     private Platform createPlatform(float x, float y, float width, float height) {
@@ -153,7 +155,7 @@ public class GameScreen implements Screen {
         body.createFixture(fixtureDef);
 
         shape.dispose();
-        
+
         return new Platform(body, width, height);
     }
 
@@ -169,14 +171,25 @@ public class GameScreen implements Screen {
         batch.dispose();
         debugRenderer.dispose();
         shapeRenderer.dispose();
-        player.dispose(); // Dispose player resources
+        player.dispose();
         for (Enemy e : enemies) {
             e.dispose();
         }
     }
 
-    @Override public void show() {}
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
+    @Override
+    public void show() {
+    }
+
+    @Override
+    public void pause() {
+    }
+
+    @Override
+    public void resume() {
+    }
+
+    @Override
+    public void hide() {
+    }
 }
